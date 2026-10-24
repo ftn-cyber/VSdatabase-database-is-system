@@ -1,0 +1,37 @@
+# ===== VSDB =====
+# Data database buatan terminal VSDB> (hapus baris ini jika ingin data ikut di-commit)
+vsdb_data/
+
+# Dependency yang dipasang VSpm
+vsdb_modules/
+
+# Metadata internal VSpm
+.vsdb/
+
+# File cadangan sementara dari runtime
+*.bak
+*.new
+*.tmp
+
+# ===== Umum =====
+# Sistem operasi
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Log dan rahasia
+*.log
+.env
+.env.*
+!.env.example
+
+# Arsip hasil build
+*.zip
+*.tar.gz
