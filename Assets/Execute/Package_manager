@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+D="$(cd -P "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+exec bash "$D/VSPackage_manager" "$@"
