@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+# VSPackage_manager (VSpm) — Virtual Stack Package Manager
+# Versi: 1.2.2 LTS
+
+VSPM_VERSION="1.2.2 LTS"
+DEPS="vsdb_modules/.deps"
+
+SOURCE="${BASH_SOURCE[0]:-$0}"
+while [ -h "$SOURCE" ]; do
+  D="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$D/$SOURCE"
+done
+HOME_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+
+usage() {
+  cat <<USG
+VSpm (Virtual Stack Package Manager) v${VSPM_VERSION}
+
+Pemakaian:
+  VSpm init                    Buat package.json lewat formulir
+  VSpm install <nama[@ver]>    Tambah dependency
+  VSpm install <./folder>      Salin modul lokal
+  VSpm remove <nama>           Hapus dependency
+  VSpm list                    Daftar dependency
+  VSpm -v | --version          Versi
+USG
+}
+
+pj() { sed -n "s/^[[:space:]]*\"$1\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" package.json | head -n1; }
+
+write_package_json() { # nama versi database
+  local first=1 n v
+  {
+    printf '{\n'
+    printf '  "name": "%s",\n' "$1"
+    printf '  "version": "%s",\n' "$2"
+    printf '  "database": "%s",\n' "$3"
+    printf '  "main": "vsdb_data/%s.VSDB",\n' "$3"
+    printf '  "scripts": {\n    "start": "VSdatabase"\n  },\n'
+    printf '  "vsdb": { "runtime": "1.0.0 LTS", "package_manager": "%s" },\n' "$VSPM_VERSION"
+    printf '  "dependencies": {'
+    if [ -s "$DEPS" ]; then
+      printf '\n'
+      while IFS== read -r n v; do
+        [ -z "$n" ] && continue
+        [ $first -eq 0 ] && printf ',\n'
+        printf '    "%s": "%s"' "$n" "$v"
+        first=0
+      done < "$DEPS"
+      printf '\n  '
+    fi
+    printf '}\n}\n'
+  } > package.json
+}
+
+need_init() {
+  [ -f package.json ] || { echo "Error: package.json belum ada. Jalankan: VSpm init" >&2; exit 1; }
+}
+
+ask() { # label regex pesan_error -> ASK_RESULT
+  local ans
+  while true; do
+    printf '%s' "$1"
+    IFS= read -r ans || { echo; echo "Formulir dibatalkan." >&2; exit 1; }
+    [ ! -t 0 ] && printf '%s\n' "$ans"
+    ans="${ans#"${ans%%[![:space:]]*}"}"; ans="${ans%"${ans##*[![:space:]]}"}"
+    if [ -z "$ans" ]; then echo "  Wajib diisi."; continue; fi
+    if [[ "$ans" =~ $2 ]]; then ASK_RESULT="$ans"; return; fi
+    echo "  $3"
+  done
+}
+
+cmd="${1:-}"
+case "$cmd" in
+  -v|--version) echo "VSPackage_manager v${VSPM_VERSION}" ;;
+  -h|--help|"") usage ;;
+
+  init)
+    if [ -f package.json ]; then
+      printf 'package.json sudah ada. Timpa? [y/n]: '
+      IFS= read -r a || exit 1; [ ! -t 0 ] && printf '%s\n' "$a"
+      case "$a" in y|Y|yes|ya) ;; *) echo "Dibatalkan."; exit 0 ;; esac
+    fi
+    echo "== VSpm init — isi formulir (semua wajib) =="
+    ask "1/3 Nama project: " '^[A-Za-z0-9._-]+$' "Pakai huruf, angka, titik, _ atau - (tanpa spasi)."
+    P_NAME="$ASK_RESULT"
+    ask "2/3 Versi project (contoh 1.0.0): " '^[0-9]+\.[0-9]+\.[0-9]+$' "Format versi harus angka.angka.angka, contoh 1.0.0"
+    P_VER="$ASK_RESULT"
+    ask "3/3 Nama file/database yang akan dipakai: " '^[A-Za-z0-9_-]+$' "Pakai huruf, angka, _ atau - (tanpa spasi dan ekstensi)."
+    P_DB="$ASK_RESULT"
+    mkdir -p vsdb_modules; touch "$DEPS"
+    write_package_json "$P_NAME" "$P_VER" "$P_DB"
+    echo "package.json dibuat."
+    bash "$HOME_DIR/runtime.sh" --create-db "$P_DB"
+    echo "Selesai. Jalankan: VSdatabase"
+    ;;
+
+  install)
+    need_init
+    arg="$2"; [ -z "$arg" ] && { echo "Error: sebutkan nama paket." >&2; exit 1; }
+    mkdir -p vsdb_modules; touch "$DEPS"
+    if [ -d "$arg" ]; then
+      name=$(basename "$arg"); ver="local"
+      rm -rf "vsdb_modules/$name"; cp -R "$arg" "vsdb_modules/$name"
+    else
+      name="${arg%%@*}"; ver="latest"
+      [ "$arg" != "$name" ] && ver="${arg#*@}"
+      mkdir -p "vsdb_modules/$name"
+      printf 'name=%s\nversion=%s\n' "$name" "$ver" > "vsdb_modules/$name/module.meta"
+    fi
+    grep -v "^$name=" "$DEPS" > "$DEPS.tmp"; mv "$DEPS.tmp" "$DEPS"
+    echo "$name=$ver" >> "$DEPS"
+    write_package_json "$(pj name)" "$(pj version)" "$(pj database)"
+    echo "terpasang: $name@$ver"
+    ;;
+
+  remove)
+    need_init
+    name="$2"; [ -z "$name" ] && { echo "Error: sebutkan nama paket." >&2; exit 1; }
+    grep -q "^$name=" "$DEPS" 2>/dev/null || { echo "Error: paket tidak terpasang: $name" >&2; exit 1; }
+    grep -v "^$name=" "$DEPS" > "$DEPS.tmp"; mv "$DEPS.tmp" "$DEPS"
+    rm -rf "vsdb_modules/$name"
+    write_package_json "$(pj name)" "$(pj version)" "$(pj database)"
+    echo "dihapus: $name"
+    ;;
+
+  list)
+    need_init
+    if [ -s "$DEPS" ]; then sed 's/=/@/' "$DEPS"; else echo "(belum ada dependency)"; fi
+    ;;
+
+  *) echo "Perintah tidak dikenal: $cmd" >&2; usage; exit 1 ;;
+esac

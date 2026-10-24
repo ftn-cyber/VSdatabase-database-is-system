@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# VSDB — perintah bantu. VSDB -v menampilkan versi runtime dan package manager.
+SOURCE="${BASH_SOURCE[0]:-$0}"
+while [ -h "$SOURCE" ]; do
+  D="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$D/$SOURCE"
+done
+HOME_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+EX="$HOME_DIR/execute"
+
+case "${1:-}" in
+  -v|--version)
+    bash "$EX/version_runtime"
+    bash "$EX/version_package_manager"
+    ;;
+  --version-runtime)         exec bash "$EX/version_runtime" ;;
+  --version-package-manager) exec bash "$EX/version_package_manager" ;;
+  pm|package)                shift; exec bash "$EX/package_manager" "$@" ;;
+  -h|--help|"")
+    cat <<USG
+VSDB — Virtual Stack Database
+
+  VSdatabase               Buka terminal VSDB>
+  VSpm init                Buat package.json (wajib sebelum memakai database)
+  VSDB -v                  Versi runtime dan package manager
+  VSDB <file.VSDB>         Jalankan file langsung
+  VSDB pm <perintah>       Sama seperti VSpm
+USG
+    ;;
+  *) exec bash "$EX/runtime" "$@" ;;
+esac

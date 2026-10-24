@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# VSpm — pintasan ke execute/package_manager
+SOURCE="${BASH_SOURCE[0]:-$0}"
+while [ -h "$SOURCE" ]; do
+  D="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$D/$SOURCE"
+done
+HOME_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+exec bash "$HOME_DIR/execute/package_manager" "$@"

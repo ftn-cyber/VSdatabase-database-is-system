@@ -1,0 +1,17 @@
+@database
+
+input database-stack
+
+
+@stack
+
+input-table
+@table warung baju
+input-data:baju kaos
+input-description-harga:10.000
+output-table
+@end table
+
+all input request-output
+
+@end database
