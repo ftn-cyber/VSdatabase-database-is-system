@@ -41,6 +41,16 @@ Panduan perancangan lengkap ada di [PRD.md](PRD.md).
 
 ## Pemasangan
 
+### Lewat curl (otomatis clone dari GitHub)
+
+```
+curl -fsSL https://raw.githubusercontent.com/ftn-cyber/VSdatabase-database-is-system/refs/heads/main/Assets/install.sh | bash
+```
+
+Skrip ini meng-clone repo ke `~/.vsdb` (atau update kalau sudah ada), menjalankan `chmod +x` pada semua file skrip, memasang perintah `VSDB`, `VSdatabase`, dan `VSpm`, lalu menambahkan folder perintah ke PATH di `~/.bashrc` atau `~/.zshrc` bila belum ada. Butuh `git` (atau `curl` dan `tar`). Folder tujuan bisa diganti dengan `VSDB_HOME=/jalur/lain`.
+
+### Dari folder hasil clone
+
 Dari folder VSDB ini:
 
 ```
