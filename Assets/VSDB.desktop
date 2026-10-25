@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=VSDB
+GenericName=Virtual Stack Database
+Comment=Terminal VSDB: runtime, VSpm, dan semua perintah langsung siap
+Exec=bash -c "exec bash ~/.vsdb/VSDB-terminal.sh"
+Icon=utilities-terminal
+Terminal=true
+Categories=Development;Utility;
+Keywords=database;vsdb;vspm;terminal;
+StartupNotify=true
